@@ -10,6 +10,8 @@ SRC_URI = "file://Makefile \
            file://COPYING \
           "
 
+PV = "1.0"
+
 S = "${WORKDIR}"
 
 RPROVIDES_${PN} += "kernel-module-aeld_hd44780" 
