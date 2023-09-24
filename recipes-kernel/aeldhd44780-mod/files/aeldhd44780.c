@@ -103,8 +103,8 @@ static int __init aeld_HD44780_init(void)
     goto delete;
   }
   
-  aeld_HD44780_class = class_create(THIS_MODULE, "aeldhd44780_class"));
-  if (IS_ERR(aeld_HD44780_class)
+  aeld_HD44780_class = class_create("aeldhd44780_class");
+  if (IS_ERR(aeld_HD44780_class))
   {
     pr_err("Class could not be created\n");
     goto destroy_class;
