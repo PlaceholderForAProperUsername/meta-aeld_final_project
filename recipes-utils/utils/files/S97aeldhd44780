@@ -1,0 +1,17 @@
+#!/bin/sh
+
+case "$1" in
+	start)
+		echo "loading aeld_HD44780"
+		modprobe aeldhd44780
+		;;
+	stop)
+		echo "unloading aeld_HD44780"
+		rmmod aeldhd44780
+		;;
+	*)
+		echo "Usage: $0 {start|stop}
+	exit 1
+esac
+
+exit 0
