@@ -1,4 +1,4 @@
-obj-m := hello.o
+obj-m := aeldhd44780.o
 
 SRC := $(shell pwd)
 
