@@ -88,7 +88,7 @@ static int __init aeld_HD44780_init(void)
 {
   pr_info("Loading Module\n");
   
-  if (alloc_chrdev_region(&dev, 0, 1, "aeld_HD44780") < 0)
+  if (alloc_chrdev_region(&dev, 0, 1, "aeldhd44780") < 0)
   {
     pr_err("Can't get major number\n");
     goto unregister;
