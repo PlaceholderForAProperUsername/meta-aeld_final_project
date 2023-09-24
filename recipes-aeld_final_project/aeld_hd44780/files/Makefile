@@ -1,4 +1,4 @@
-obj-m := aeld_HD44780.o
+obj-m := aeld_hd44780.o
 
 SRC := $(shell pwd)
 
