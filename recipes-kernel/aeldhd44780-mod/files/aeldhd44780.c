@@ -18,6 +18,7 @@
 
 dev_t dev = 0;
 static struct cdev aeld_HD44780_cdev;
+static struct class *aeld_HD44780_class;
 
 static int __init aeld_HD44780_init(void);
 static void __exit aeld_HD44780_exit(void);
@@ -102,6 +103,19 @@ static int __init aeld_HD44780_init(void)
     goto delete;
   }
   
+  aeld_HD44780_class = class_create(THIS_MODULE, "aeldhd44780_class"));
+  if (IS_ERR(aeld_HD44780_class)
+  {
+    pr_err("Class could not be created\n");
+    goto destroy_class;
+  }
+  
+  if (IS_ERR(device_create(aeld_HD44780_class, NULL, dev, NULL, "aeldhd44780_dev")))
+  {
+    pr_err("Device could not be created\n");
+    goto destroy_device;
+  }
+  
   if (gpio_request(GPIO_RS, "GPIORS") < 0)
   {
     pr_err("Request of GPIO %d failed\n", GPIO_RS);
@@ -183,6 +197,10 @@ gpio_e:
   gpio_free(GPIO_E);
 gpio_rs:
   gpio_free(GPIO_RS);
+destroy_device:
+  device_destroy(aeld_HD44780_class, dev);
+destroy_class:
+  class_destroy(aeld_HD44780_class);
 delete:
   cdev_del(&aeld_HD44780_cdev);
 unregister:
@@ -199,6 +217,8 @@ static void __exit aeld_HD44780_exit(void)
   gpio_free(GPIO_D4);
   gpio_free(GPIO_E);
   gpio_free(GPIO_RS);
+  device_destroy(aeld_HD44780_class, dev);
+  class_destroy(aeld_HD44780_class);
   cdev_del(&aeld_HD44780_cdev);
   unregister_chrdev_region(dev, 1);
   pr_info("Module unloaded\n");
