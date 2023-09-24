@@ -6,6 +6,7 @@
 #include <linux/fs.h>
 #include <linux/err.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
 
 #define GPIO_RS  (5)
 #define GPIO_E   (6)
@@ -45,8 +46,10 @@ static ssize_t aeld_HD44780_write(struct file *filp, const char __user *msg, siz
   char *buf;
   int recv_bytes = 0;
   buf = (char *) kmalloc(len, GFP_KERNEL);
+  pr_info("Writing message\n");
   
   recv_bytes = len - copy_from_user(&buf[0], msg, len);
+  pr_info("Message to write %s\n", &buf[0]);
   for (int i = 0; i < recv_bytes; ++i)
   {
     gpio_set_value(GPIO_E, 0); 
@@ -58,6 +61,7 @@ static ssize_t aeld_HD44780_write(struct file *filp, const char __user *msg, siz
     gpio_set_value(GPIO_D4, buf[i] & 0x10);
     
     gpio_set_value(GPIO_E, 1);
+    udelay(40);
     gpio_set_value(GPIO_E, 0);
     
     gpio_set_value(GPIO_D7, buf[i] & 0x08);
@@ -66,13 +70,37 @@ static ssize_t aeld_HD44780_write(struct file *filp, const char __user *msg, siz
     gpio_set_value(GPIO_D4, buf[i] & 0x01);
     
     gpio_set_value(GPIO_E, 1);
+    udelay(40);
     gpio_set_value(GPIO_E, 0);
   }
-  
+  pr_info("Message complete. %d bytes where written to display\n", recv_bytes);
   return recv_bytes;
 }
 static loff_t aeld_HD44780_llseek(struct file *filp, loff_t offset, int whence)
 {
+  pr_info("Changing position of cursor\n");
+  gpio_set_value(GPIO_E, 0); 
+  gpio_set_value(GPIO_RS, 0);
+  
+  gpio_set_value(GPIO_D7, 1);
+  gpio_set_value(GPIO_D6, offset & 0x40);
+  gpio_set_value(GPIO_D5, offset & 0x20);
+  gpio_set_value(GPIO_D4, offset & 0x10);
+  
+  gpio_set_value(GPIO_E, 1);
+  udelay(40);
+  gpio_set_value(GPIO_E, 0);
+  
+  gpio_set_value(GPIO_D7, offset & 0x08);
+  gpio_set_value(GPIO_D6, offset & 0x04);
+  gpio_set_value(GPIO_D5, offset & 0x02);
+  gpio_set_value(GPIO_D4, offset & 0x01);
+  
+  gpio_set_value(GPIO_E, 1);
+  udelay(40);
+  gpio_set_value(GPIO_E, 0);
+  
+  pr_info("Cursor position changed\n");
   return 0;
 }
 
@@ -116,36 +144,66 @@ static int __init aeld_HD44780_init(void)
     goto destroy_device;
   }
   
+  if (gpio_is_valid(GPIO_RS) == false)
+  {
+    pr_err("GPIO %d is not valid\n", GPIO_RS);
+    goto destroy_device;
+  }
   if (gpio_request(GPIO_RS, "GPIORS") < 0)
   {
     pr_err("Request of GPIO %d failed\n", GPIO_RS);
     goto gpio_rs;
   }
   
+  if (gpio_is_valid(GPIO_E) == false)
+  {
+    pr_err("GPIO %d is not valid\n", GPIO_E);
+    goto gpio_rs;
+  }
   if (gpio_request(GPIO_E, "GPIOE") < 0)
   {
     pr_err("Request of GPIO %d failed\n", GPIO_E);
     goto gpio_e;
   }
   
+  if (gpio_is_valid(GPIO_D4) == false)
+  {
+    pr_err("GPIO %d is not valid\n", GPIO_D4);
+    goto gpio_e;
+  }
   if (gpio_request(GPIO_D4, "GPIOD4") < 0)
   {
     pr_err("Request of GPIO %d failed\n", GPIO_D4);
     goto gpio_d4;
   }
   
+  if (gpio_is_valid(GPIO_D5) == false)
+  {
+    pr_err("GPIO %d is not valid\n", GPIO_D5);
+    goto gpio_d4;
+  }
   if (gpio_request(GPIO_D5, "GPIOD5") < 0)
   {
     pr_err("Request of GPIO %d failed\n", GPIO_D5);
     goto gpio_d5;
   }
   
+  if (gpio_is_valid(GPIO_D6) == false)
+  {
+    pr_err("GPIO %d is not valid\n", GPIO_D6);
+    goto gpio_d5;
+  }
   if (gpio_request(GPIO_D6, "GPIOD6") < 0)
   {
     pr_err("Request of GPIO %d failed\n", GPIO_D6);
     goto gpio_d6;
   }
   
+  if (gpio_is_valid(GPIO_D7) == false)
+  {
+    pr_err("GPIO %d is not valid\n", GPIO_D7);
+    goto gpio_d6;
+  }
   if (gpio_request(GPIO_D7, "GPIOD7") < 0)
   {
     pr_err("Request of GPIO %d failed\n", GPIO_D7);
@@ -160,6 +218,8 @@ static int __init aeld_HD44780_init(void)
   gpio_direction_output(GPIO_D6, 0);
   gpio_direction_output(GPIO_D7, 0);
   
+  udelay(100);
+  
   // initialize LCD to be used in 4-bit mode
   gpio_set_value(GPIO_E, 0); 
   gpio_set_value(GPIO_RS, 0);
@@ -170,6 +230,7 @@ static int __init aeld_HD44780_init(void)
   gpio_set_value(GPIO_D4, 0);
   
   gpio_set_value(GPIO_E, 1);
+  udelay(40);
   gpio_set_value(GPIO_E, 0);
   
   gpio_set_value(GPIO_D7, 1);
@@ -178,6 +239,7 @@ static int __init aeld_HD44780_init(void)
   gpio_set_value(GPIO_D4, 0);
   
   gpio_set_value(GPIO_E, 1);
+  udelay(40);
   gpio_set_value(GPIO_E, 0);
   
   
