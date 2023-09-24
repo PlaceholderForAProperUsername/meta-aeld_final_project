@@ -1,6 +1,5 @@
 obj-m := aeld_hd44780.o
 
-KERNEL_SRC ?= /lib/modules/$(shell uname -r)/build
 SRC := $(shell pwd)
 
 all:
