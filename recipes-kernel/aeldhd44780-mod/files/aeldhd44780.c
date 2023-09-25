@@ -260,6 +260,17 @@ static int __init aeld_HD44780_init(void)
   mdelay(2);
   
   // initialize LCD
+  gpio_set_value(GPIO_E, 0); 
+  gpio_set_value(GPIO_RS, 0);
+  
+  gpio_set_value(GPIO_D7, 0);
+  gpio_set_value(GPIO_D6, 0);
+  gpio_set_value(GPIO_D5, 1);
+  gpio_set_value(GPIO_D4, 0);
+  
+  gpio_set_value(GPIO_E, 1);
+  gpio_set_value(GPIO_E, 0);
+  
   write_cmd(CMD_4_BIT_2_LINE);
   write_cmd(CMD_ENTRY_MODE);
   write_cmd(CMD_DISP_ON_CUR_OFF);
