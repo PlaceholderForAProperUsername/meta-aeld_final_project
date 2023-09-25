@@ -18,5 +18,7 @@ do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 ${S}/aeldd ${D}${bindir}/
 	install -d ${D}${sysconfdir}/init.d
-	install -m 0755 ${WORKDIR}/aeldd-start-stop ${D}${sysconfdir}/init.d/S99aeldd-start-stop
+	install -m 0755 ${WORKDIR}/aeldd-start-stop ${D}${sysconfdir}/init.d/aeldd-start-stop
+	
+	ln -sf ../init.d/aeldd-start-stop	${D}${sysconfdir}/rcS.d/S99aeldd-start-stop
 }
