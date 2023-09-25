@@ -10,7 +10,7 @@ case "$1" in
 		rmmod aeldhd44780
 		;;
 	*)
-		echo "Usage: $0 {start|stop}
+		echo "Usage: $0 {start|stop}"
 	exit 1
 esac
 

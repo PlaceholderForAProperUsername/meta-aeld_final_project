@@ -15,6 +15,12 @@
 #define GPIO_D6  (26)
 #define GPIO_D7  (16)
 
+#define CMD_ENTRY_MODE      (0x06)
+#define CMD_DISP_ON_CUR_OFF (0x0C)
+#define CMD_4_BIT_2_LINE    (0x28)
+#define CMD_CLEAR_DISP      (0x01)
+#define CMD_RETURN_HOME     (0x02)
+
 #define pr_fmt(fmt) "aeld_HD44780: " fmt
 
 dev_t dev = 0;
@@ -28,6 +34,8 @@ static int aeld_HD44780_open(struct inode *inode, struct file *file);
 static int aeld_HD44780_release(struct inode *inode, struct file *file);
 static ssize_t aeld_HD44780_write(struct file *filp, const char __user *msg, size_t len, loff_t *off);
 static loff_t aeld_HD44780_llseek(struct file *filp, loff_t offset, int whence);
+
+static int write_cmd(int cmd);
 
 static int aeld_HD44780_open(struct inode *inode, struct file *file)
 {
@@ -49,7 +57,7 @@ static ssize_t aeld_HD44780_write(struct file *filp, const char __user *msg, siz
   pr_info("Writing message\n");
   
   recv_bytes = len - copy_from_user(&buf[0], msg, len);
-  pr_info("Message to write %s\n", &buf[0]);
+  pr_info("bytes to write %d\n", recv_bytes);
   for (int i = 0; i < recv_bytes; ++i)
   {
     gpio_set_value(GPIO_E, 0); 
@@ -61,8 +69,9 @@ static ssize_t aeld_HD44780_write(struct file *filp, const char __user *msg, siz
     gpio_set_value(GPIO_D4, buf[i] & 0x10);
     
     gpio_set_value(GPIO_E, 1);
-    udelay(40);
     gpio_set_value(GPIO_E, 0);
+    
+    udelay(40);
     
     gpio_set_value(GPIO_D7, buf[i] & 0x08);
     gpio_set_value(GPIO_D6, buf[i] & 0x04);
@@ -70,15 +79,16 @@ static ssize_t aeld_HD44780_write(struct file *filp, const char __user *msg, siz
     gpio_set_value(GPIO_D4, buf[i] & 0x01);
     
     gpio_set_value(GPIO_E, 1);
-    udelay(40);
     gpio_set_value(GPIO_E, 0);
+    
+    udelay(40);
   }
   pr_info("Message complete. %d bytes where written to display\n", recv_bytes);
   return recv_bytes;
 }
 static loff_t aeld_HD44780_llseek(struct file *filp, loff_t offset, int whence)
 {
-  pr_info("Changing position of cursor\n");
+  pr_info("Changing position of cursor to offset %lld\n", offset);
   gpio_set_value(GPIO_E, 0); 
   gpio_set_value(GPIO_RS, 0);
   
@@ -88,8 +98,9 @@ static loff_t aeld_HD44780_llseek(struct file *filp, loff_t offset, int whence)
   gpio_set_value(GPIO_D4, offset & 0x10);
   
   gpio_set_value(GPIO_E, 1);
-  udelay(40);
   gpio_set_value(GPIO_E, 0);
+  
+  udelay(40);
   
   gpio_set_value(GPIO_D7, offset & 0x08);
   gpio_set_value(GPIO_D6, offset & 0x04);
@@ -97,11 +108,37 @@ static loff_t aeld_HD44780_llseek(struct file *filp, loff_t offset, int whence)
   gpio_set_value(GPIO_D4, offset & 0x01);
   
   gpio_set_value(GPIO_E, 1);
-  udelay(40);
   gpio_set_value(GPIO_E, 0);
+  
+  udelay(40);
   
   pr_info("Cursor position changed\n");
   return 0;
+}
+
+static int write_cmd(int cmd)
+{
+  mdelay(2);
+  gpio_set_value(GPIO_E, 0); 
+  gpio_set_value(GPIO_RS, 0);
+  
+  gpio_set_value(GPIO_D7, cmd & 0x80);
+  gpio_set_value(GPIO_D6, cmd & 0x40);
+  gpio_set_value(GPIO_D5, cmd & 0x20);
+  gpio_set_value(GPIO_D4, cmd & 0x10);
+  
+  gpio_set_value(GPIO_E, 1);
+  gpio_set_value(GPIO_E, 0);
+  
+  udelay(40);
+  
+  gpio_set_value(GPIO_D7, cmd & 0x08);
+  gpio_set_value(GPIO_D6, cmd & 0x04);
+  gpio_set_value(GPIO_D5, cmd & 0x02);
+  gpio_set_value(GPIO_D4, cmd & 0x01);
+  
+  gpio_set_value(GPIO_E, 1);
+  gpio_set_value(GPIO_E, 0);
 }
 
 static struct file_operations aeld_HD44780_fops =
@@ -218,29 +255,14 @@ static int __init aeld_HD44780_init(void)
   gpio_direction_output(GPIO_D6, 0);
   gpio_direction_output(GPIO_D7, 0);
   
-  udelay(100);
+  mdelay(2);
   
-  // initialize LCD to be used in 4-bit mode
-  gpio_set_value(GPIO_E, 0); 
-  gpio_set_value(GPIO_RS, 0);
-  
-  gpio_set_value(GPIO_D7, 0);
-  gpio_set_value(GPIO_D6, 0);
-  gpio_set_value(GPIO_D5, 1);
-  gpio_set_value(GPIO_D4, 0);
-  
-  gpio_set_value(GPIO_E, 1);
-  udelay(40);
-  gpio_set_value(GPIO_E, 0);
-  
-  gpio_set_value(GPIO_D7, 1);
-  gpio_set_value(GPIO_D6, 0);
-  gpio_set_value(GPIO_D5, 0);
-  gpio_set_value(GPIO_D4, 0);
-  
-  gpio_set_value(GPIO_E, 1);
-  udelay(40);
-  gpio_set_value(GPIO_E, 0);
+  // initialize LCD
+  write_cmd(CMD_ENTRY_MODE);
+  write_cmd(CMD_DISP_ON_CUR_OFF);
+  write_cmd(CMD_4_BIT_2_LINE);
+  write_cmd(CMD_CLEAR_DISP);
+  write_cmd(CMD_RETURN_HOME);
   
   
   pr_info("Module loading complete\n");
