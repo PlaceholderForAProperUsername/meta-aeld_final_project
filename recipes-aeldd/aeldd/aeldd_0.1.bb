@@ -10,10 +10,6 @@ SRC_URI = "file://aeldd-start-stop \
 
 S = "${WORKDIR}"
 
-inherit update-rc.d
-INITSCRIPT_NAME = "aeldd-start-stop"
-INITSCRIPT_PARAMS = "99 5"
-
 do_compile () {
 	oe_runmake
 }
@@ -22,5 +18,5 @@ do_install() {
 	install -d ${D}${bindir}
 	install -m 0755 ${S}/aeldd ${D}${bindir}/
 	install -d ${D}${sysconfdir}/init.d
-	install -m 0755 ${WORKDIR}/aeldd-start-stop ${D}${sysconfdir}/init.d/
+	install -m 0755 ${WORKDIR}/aeldd-start-stop ${D}${sysconfdir}/init.d/S99aeldd-start-stop
 }
