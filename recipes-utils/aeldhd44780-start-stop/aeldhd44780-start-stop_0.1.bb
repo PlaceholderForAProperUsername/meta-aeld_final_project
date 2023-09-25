@@ -9,6 +9,7 @@ SRC_URI = "file://aeldhd44780-start-stop \
 S = "${WORKDIR}"
 do_install() {
 	install -d ${D}${sysconfdir}/init.d
+	install -d ${D}${sysconfdir}/rcS.d
 	install -m 0755 ${WORKDIR}/aeldhd44780-start-stop ${D}${sysconfdir}/init.d/aeldhd44780-start-stop
 	
 	ln -sf ../init.d/aeldhd44780-start-stop	${D}${sysconfdir}/rcS.d/S97aeldhd44780-start-stop
