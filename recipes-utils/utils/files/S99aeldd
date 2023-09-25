@@ -1,0 +1,17 @@
+#!/bin/sh
+
+case "$1" in
+	start)
+		echo "Starting aeldd"
+		start-stop-daemon -S aeldd -a /usr/bin/aeldd -- -d
+		;;
+	stop)
+		echo "Stopping aeldd"
+		start-stop-daemon -K -n aeldd
+		;;
+	*)
+		echo "Usage: $0 {start|stop}"
+	exit 1
+esac
+
+exit 0

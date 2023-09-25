@@ -138,7 +138,7 @@ static int __init aeld_HD44780_init(void)
     goto destroy_class;
   }
   
-  if (IS_ERR(device_create(aeld_HD44780_class, NULL, dev, NULL, "aeldhd44780_dev")))
+  if (IS_ERR(device_create(aeld_HD44780_class, NULL, dev, NULL, "aeldhd44780")))
   {
     pr_err("Device could not be created\n");
     goto destroy_device;
