@@ -139,6 +139,8 @@ static int write_cmd(int cmd)
   
   gpio_set_value(GPIO_E, 1);
   gpio_set_value(GPIO_E, 0);
+  
+  return 0;
 }
 
 static struct file_operations aeld_HD44780_fops =
