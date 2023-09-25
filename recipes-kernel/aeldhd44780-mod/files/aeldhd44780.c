@@ -260,9 +260,9 @@ static int __init aeld_HD44780_init(void)
   mdelay(2);
   
   // initialize LCD
+  write_cmd(CMD_4_BIT_2_LINE);
   write_cmd(CMD_ENTRY_MODE);
   write_cmd(CMD_DISP_ON_CUR_OFF);
-  write_cmd(CMD_4_BIT_2_LINE);
   write_cmd(CMD_CLEAR_DISP);
   write_cmd(CMD_RETURN_HOME);
   
