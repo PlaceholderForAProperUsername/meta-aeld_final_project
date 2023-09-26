@@ -1,4 +1,4 @@
-obj-m := aeldmax30101.o
+obj-m := aeldbme280.o
 
 SRC := $(shell pwd)
 
@@ -9,6 +9,6 @@ modules_install:
 	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules_install
 
 clean:
-	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c *.o.d
+	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c .*.o.d
 	rm -f Module.markers Module.symvers modules.order
 	rm -rf .tmp_versions Modules.symvers
