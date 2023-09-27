@@ -33,7 +33,7 @@
 
 #define MEAS_DATA_START_ADDR    0xF7
 
-static struct aeld_bme280_comp_param {
+struct aeld_bme280_comp_param {
     u16 dig_T1;
     s16 dig_T2;
     s16 dig_T3;
@@ -235,8 +235,8 @@ static ssize_t aeld_bme280_read(struct file *filp, char __user *buf, size_t coun
   double result[3] = {0};
   struct aeld_bme280_dev *bme280p = filp->private_data;
   aeld_bme280_do_measurement(bme280p, &result[0]);
-  copy_to_user(buf, result, sizeof(result));
-  return 0;
+  
+  return count - copy_to_user(buf, result, sizeof(result));
 }
 
 static struct file_operations aeld_bme280_fops = {
@@ -255,7 +255,6 @@ MODULE_DEVICE_TABLE(of, aeld_bme280_dt_ids);
 static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
   int major;
-  int err = 0;
   struct aeld_bme280_dev *aeld_bme280 = NULL;
   struct device *device = NULL;
   u8 is_resetting;
@@ -297,11 +296,10 @@ fail:
   return PTR_ERR(device);
 }
 
-static int aeld_bme280_remove(struct i2c_client *client)
+static void aeld_bme280_remove(struct i2c_client *client)
 {
   struct aeld_bme280_dev *aeld_bme280 = i2c_get_clientdata(client);
   device_destroy(aeld_bme280_class, aeld_bme280->devt);
-  return 0;
 }
 
 static const struct i2c_device_id aeld_bme280_id[] = {
