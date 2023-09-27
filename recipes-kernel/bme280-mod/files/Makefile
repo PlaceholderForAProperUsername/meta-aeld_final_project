@@ -1,5 +1,6 @@
 obj-m := aeldbme280.o
 
+KERNEL_SRC ?= /lib/modules/$(shell uname -r)/build
 SRC := $(shell pwd)
 
 all:

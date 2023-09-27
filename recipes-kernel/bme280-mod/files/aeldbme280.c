@@ -13,6 +13,21 @@
 
 #define BME280_DEVICE_NAME  ("aeldbme280")
 
+
+// ctrl_meas register
+#define CTRL_MEAS_REG_ADDR      0xF4
+#define CMD_T_OVERSAMPLING      0x20 // set to factor of 1
+#define CMD_P_OVERSAMPLING      0x04 // set to factor of 1
+#define CMD_FORCED_MODE         0x01
+#define CTRL_MEAS_REG_VAL       (CMD_T_OVERSAMPLING | CMD_P_OVERSAMPLING)
+#define ACTIVATING_FORCED_MODE  (CTRL_MEAS_REG_VAL | CMD_FORCED_MODE)
+
+// ctrl_hum register
+#define CTRL_HUM_REG_ADDR       0xF2
+#define CMD_H_OVERSAMPLING      0x01
+
+#define MEAS_DATA_START_ADDR    0xF7
+
 static struct aeld_bme280_comp_param {
     u16 dig_T1;
     s16 dig_T2;
@@ -41,24 +56,21 @@ static struct aeld_bme280_comp_param {
 struct aeld_bme280_dev {
   struct i2c_client *client;
   dev_t devt;
-  float temperatue;
-  float pressure;
-  float humidity;
   struct aeld_bme280_comp_param comp_param;
 };
 
 static struct class *aeld_bme280_class = NULL;
 
-static int aeld_bme280_write_cmd(aeld_bme280_dev *bme280p, u8 reg_addr, u8 cmd)
+static int aeld_bme280_write_cmd(struct aeld_bme280_dev *bme280p, u8 reg_addr, u8 cmd)
 {
   struct i2c_msg msg[2];
   int status = 0;
-  msg[0].addr = bme280p->client->adapter;
+  msg[0].addr = bme280p->client->addr;
   msg[0].flags = 0;
   msg[0].len = 1;
   msg[0].buf = &reg_addr;
   
-  msg[1].addr = bme280p->client->adapter;
+  msg[1].addr = bme280p->client->addr;
   msg[1].flags = 0;
   msg[1].len = 1;
   msg[1].buf = &cmd;
@@ -71,7 +83,7 @@ static int aeld_bme280_write_cmd(aeld_bme280_dev *bme280p, u8 reg_addr, u8 cmd)
   return status;
 }
 
-static int aeld_bme280_read_bytes(aeld_bme280_dev *bme280p, u8 reg_addr, u8 *buf, u8 len)
+static int aeld_bme280_read_bytes(struct aeld_bme280_dev *bme280p, u8 reg_addr, u8 *buf, u8 len)
 {
   struct i2c_msg msg[2];
   int status = 0;
@@ -93,13 +105,13 @@ static int aeld_bme280_read_bytes(aeld_bme280_dev *bme280p, u8 reg_addr, u8 *buf
   return status;
 }
 
-static int aeld_bme280_com_param_init(aeld_bme280_dev *bme280p)
+static int aeld_bme280_com_param_init(struct aeld_bme280_dev *bme280p)
 {
   u8 comp_param_block_1[26];
   u8 comp_param_block_2[7];
   
   aeld_bme280_read_bytes(bme280p, 0x88, &comp_param_block_1[0], 26);
-  aeld_bme280_read_bytes(bme280p, 0xe1, &comp_param_block_2[0], 7);
+  aeld_bme280_read_bytes(bme280p, 0xE1, &comp_param_block_2[0], 7);
   
   bme280p->comp_param.dig_T1 = (u16) (comp_param_block_1[1] << 8) | comp_param_block_1[0];
   bme280p->comp_param.dig_T2 = (s16) ((comp_param_block_1[3] << 8) | comp_param_block_1[2]);
@@ -125,22 +137,58 @@ static int aeld_bme280_com_param_init(aeld_bme280_dev *bme280p)
 
 // TODO
 
-static int aeld_bme280_comp_temp(aeld_bme280_dev *bme280p, int raw_temperature)
+static double aeld_bme280_comp_temp(struct aeld_bme280_dev *bme280p, int raw_temperature)
 {
-  return 0;
+  double tmp1, tmp2, temperature;
+  tmp1 = (((double) raw_temperature)/16384.0 - ((double)bme280p->comp_param.dig_T1)/1024.0) * ((double) bme280p->comp_param.dig_T2);
+  tmp2 = ((((double) raw_temperature)/131072.0 - ((double)bme280p->comp_param.dig_T1) / 8192.0) * 
+    (((double)raw_temperature)/131072.0 - ((double)bme280p->comp_param.dig_T1)/8192.0)) * ((double)bme280p->comp_param.dig_T3);
+  bme280p->comp_param.comp_temp = (s32) (tmp1 + tmp2);
+  temperature = (tmp1 + tmp2) / 5120.0;
+  return temperature;
 }
 
-static int aeld_bme280_comp_press(aeld_bme280_dev *bme280p, int raw_pressure)
+static double aeld_bme280_comp_press(struct aeld_bme280_dev *bme280p, int raw_pressure)
 {
-  return 0;
+  double tmp1, tmp2, pressure;
+  tmp1 = ((double) bme280p->comp_param.comp_temp / 2.0) - 64000.0;
+  tmp2 = tmp1 * tmp1 * ((double)bme280p->comp_param.dig_P6) / 32768.0;
+  tmp2 = tmp2 + tmp1 * ((double) bme280p->comp_param.dig_P5) * 2.0;
+  tmp2 = (tmp2 / 4.0) + (((double) bme280p->comp_param.dig_P4) * 65536.0);
+  tmp1 = (((double) bme280p->comp_param.dig_P3) * tmp1 * tmp1 / 524288.0 + ((double) bme280p->comp_param.dig_P2) * tmp1) / 524288.0;
+  tmp1 = (1.0 + tmp1 / 32768.0) * ((double) bme280p->comp_param.dig_P1);
+  if (tmp1 == 0.0)
+  {
+    return 0;
+  }
+  pressure = 1048576.0 - (double) raw_pressure;
+  pressure = (pressure - (tmp2 / 4096.0)) * 6250.0 / tmp1;
+  tmp1 = ((double) bme280p->comp_param.dig_P9) * pressure * pressure / 2147483648.0;
+  tmp2 = pressure * ((double) bme280p->comp_param.dig_P8) / 32768.0;
+  pressure = pressure + (tmp1 + tmp2 + ((double) bme280p->comp_param.dig_P7)) / 16.0;
+  return pressure;
 }
 
-static int aeld_bme280_comp_temp(aeld_bme280_dev *bme280p, int raw_humidity)
+static double aeld_bme280_comp_hum(struct aeld_bme280_dev *bme280p, int raw_humidity)
 {
-  return 0;
+  double humidity;
+  humidity = (((double) bme280p->comp_param.comp_temp) - 76800.0);
+  humidity = (raw_humidity - (((double) bme280p->comp_param.dig_H4) * 64.0 +((double) bme280p->comp_param.dig_H5) / 16348.0 * 
+    humidity)) * (((double) bme280p->comp_param.dig_H2) / 65536.0 * (1.0 + ((double) bme280p->comp_param.dig_H6) / 67108864.0 * 
+    humidity * (1.0 + ((double) bme280p->comp_param.dig_H3) / 67108864.0 * humidity)));
+  humidity = humidity * (1.0 - ((double) bme280p->comp_param.dig_H1) * humidity / 524288.0);
+  if (humidity > 100.0)
+  {
+    humidity = 100.0;
+  }
+  else if (humidity < 0.0)
+  {
+    humidity = 0.0;
+  }
+  return humidity;
 }
 
-static int aeld_bme280_do_measurement(aeld_bme280_dev *bme280p)
+static int aeld_bme280_do_measurement(struct aeld_bme280_dev *bme280p)
 {
   return 0;
 }
@@ -157,7 +205,7 @@ static int aeld_bme280_release(struct inode *inode, struct file *filp)
   return 0;
 }
 
-static int aeld_bme280_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg)
+static ssize_t aeld_bme280_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
   return 0;
 }
@@ -166,7 +214,7 @@ static struct file_operations aeld_bme280_fops = {
   .owner          = THIS_MODULE,
   .open           = aeld_bme280_open,
   .release        = aeld_bme280_release,
-  .unlocked_ioctl = aeld_bme280_ioctl,
+  .read           = aeld_bme280_read,
 };
 
 static const struct of_device_id aeld_bme280_dt_ids[] = {
@@ -246,7 +294,7 @@ static int __init aeld_bme280_driver_init(void)
   return status;
 }
 
-static void __exit aeld_bme280_exit(void)
+static void __exit aeld_bme280_driver_exit(void)
 {
   i2c_del_driver(&aeld_bme280_i2c_driver);
   class_destroy(aeld_bme280_class);
