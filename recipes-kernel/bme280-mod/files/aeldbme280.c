@@ -30,17 +30,20 @@ static struct aeld_bme280_comp_param {
     s16 dig_P8;
     s16 dig_P9;
 
-    s16 dig_H1;
+    u8 dig_H1;
     s16 dig_H2;
-    s16 dig_H3;
+    u8 dig_H3;
     s16 dig_H4;
     s16 dig_H5;
-    s16 dig_H6;
+    s8 dig_H6;
 };
 
 struct aeld_bme280_dev {
   struct i2c_client *client;
   dev_t devt;
+  float temperatue;
+  float pressure;
+  float humidity;
   struct aeld_bme280_comp_param comp_param;
 };
 
@@ -88,6 +91,58 @@ static int aeld_bme280_read_bytes(aeld_bme280_dev *bme280p, u8 reg_addr, u8 *buf
     pr_err("write cmd failed\n");
   }
   return status;
+}
+
+static int aeld_bme280_com_param_init(aeld_bme280_dev *bme280p)
+{
+  u8 comp_param_block_1[26];
+  u8 comp_param_block_2[7];
+  
+  aeld_bme280_read_bytes(bme280p, 0x88, &comp_param_block_1[0], 26);
+  aeld_bme280_read_bytes(bme280p, 0xe1, &comp_param_block_2[0], 7);
+  
+  bme280p->comp_param.dig_T1 = (u16) (comp_param_block_1[1] << 8) | comp_param_block_1[0];
+  bme280p->comp_param.dig_T2 = (s16) ((comp_param_block_1[3] << 8) | comp_param_block_1[2]);
+  bme280p->comp_param.dig_T3 = (s16) ((comp_param_block_1[5] << 8) | comp_param_block_1[4]);
+  bme280p->comp_param.dig_P1 = (u16) (comp_param_block_1[7] << 8) | comp_param_block_1[6];
+  bme280p->comp_param.dig_P2 = (s16) ((comp_param_block_1[9] << 8) | comp_param_block_1[8]);
+  bme280p->comp_param.dig_P3 = (s16) ((comp_param_block_1[11] << 8) | comp_param_block_1[10]);
+  bme280p->comp_param.dig_P4 = (s16) ((comp_param_block_1[13] << 8) | comp_param_block_1[12]);
+  bme280p->comp_param.dig_P5 = (s16) ((comp_param_block_1[15] << 8) | comp_param_block_1[14]);
+  bme280p->comp_param.dig_P6 = (s16) ((comp_param_block_1[17] << 8) | comp_param_block_1[16]);
+  bme280p->comp_param.dig_P7 = (s16) ((comp_param_block_1[19] << 8) | comp_param_block_1[18]);
+  bme280p->comp_param.dig_P8 = (s16) ((comp_param_block_1[21] << 8) | comp_param_block_1[20]);
+  bme280p->comp_param.dig_P9 = (s16) ((comp_param_block_1[23] << 8) | comp_param_block_1[22]);
+  bme280p->comp_param.dig_H1 = comp_param_block_1[25];
+  bme280p->comp_param.dig_H2 = (s16) ((comp_param_block_2[1] << 8) | comp_param_block_2[0]);
+  bme280p->comp_param.dig_H3 = comp_param_block_2[2];
+  bme280p->comp_param.dig_H4 = (s16) ((comp_param_block_2[3] << 4) | (comp_param_block_2[4] & 0x0F));
+  bme280p->comp_param.dig_H5 = (s16) ((comp_param_block_2[5] << 4) | (comp_param_block_2[4] >> 4));
+  bme280p->comp_param.dig_H6 = (s8) comp_param_block_2[6];
+  
+  return 0;
+}
+
+// TODO
+
+static int aeld_bme280_comp_temp(aeld_bme280_dev *bme280p, int raw_temperature)
+{
+  return 0;
+}
+
+static int aeld_bme280_comp_press(aeld_bme280_dev *bme280p, int raw_pressure)
+{
+  return 0;
+}
+
+static int aeld_bme280_comp_temp(aeld_bme280_dev *bme280p, int raw_humidity)
+{
+  return 0;
+}
+
+static int aeld_bme280_do_measurement(aeld_bme280_dev *bme280p)
+{
+  return 0;
 }
 
 static int aeld_bme280_open(struct inode *inode, struct file *filp)
@@ -199,7 +254,6 @@ static void __exit aeld_bme280_exit(void)
 
 module_init(aeld_bme280_driver_init);
 module_exit(aeld_bme280_driver_exit);
-
 
 MODULE_DESCRIPTION("BME280 driver");
 MODULE_AUTHOR("PlaceholderForAProperUsername");
