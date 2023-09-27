@@ -20,11 +20,16 @@
 #define CMD_P_OVERSAMPLING      0x04 // set to factor of 1
 #define CMD_FORCED_MODE         0x01
 #define CTRL_MEAS_REG_VAL       (CMD_T_OVERSAMPLING | CMD_P_OVERSAMPLING)
-#define ACTIVATING_FORCED_MODE  (CTRL_MEAS_REG_VAL | CMD_FORCED_MODE)
+#define ACTIVATE_FORCED_MODE    (CTRL_MEAS_REG_VAL | CMD_FORCED_MODE)
 
 // ctrl_hum register
 #define CTRL_HUM_REG_ADDR       0xF2
 #define CMD_H_OVERSAMPLING      0x01
+
+#define STATUS_REG_ADDR         0xF3
+
+#define IS_MEASURING_BIT        (1<<3)
+#define IS_RESETING_BIT         (1<<0)
 
 #define MEAS_DATA_START_ADDR    0xF7
 
@@ -87,12 +92,12 @@ static int aeld_bme280_read_bytes(struct aeld_bme280_dev *bme280p, u8 reg_addr, 
 {
   struct i2c_msg msg[2];
   int status = 0;
-  msg[0].addr = bme280p->client->adapter;
+  msg[0].addr = bme280p->client->addr;
   msg[0].flags = 0;
   msg[0].len = 1;
   msg[0].buf = &reg_addr;
   
-  msg[1].addr = bme280p->client->adapter;
+  msg[1].addr = bme280p->client->addr;
   msg[1].flags = I2C_M_RD;
   msg[1].len = len;
   msg[1].buf = buf;
@@ -188,8 +193,28 @@ static double aeld_bme280_comp_hum(struct aeld_bme280_dev *bme280p, int raw_humi
   return humidity;
 }
 
-static int aeld_bme280_do_measurement(struct aeld_bme280_dev *bme280p)
+static int aeld_bme280_do_measurement(struct aeld_bme280_dev *bme280p, double result[])
 {
+  u8 is_measuring;
+  u8 raw_data[8] = {0};
+  int raw_temperature;
+  int raw_pressure;
+  int raw_humidity;
+  aeld_bme280_write_cmd(bme280p, CTRL_MEAS_REG_ADDR, ACTIVATE_FORCED_MODE);
+  mdelay(10);
+  do
+  {
+    mdelay(1);
+    aeld_bme280_read_bytes(bme280p, STATUS_REG_ADDR, &is_measuring, 1);
+  }
+  while (is_measuring | IS_MEASURING_BIT);
+  aeld_bme280_read_bytes(bme280p, MEAS_DATA_START_ADDR, &raw_data[0], 8);
+  raw_pressure = (int) (raw_data[0] << 12) | (raw_data[1] << 4) | (raw_data[2] >> 4);
+  raw_temperature = (int) (raw_data[3] << 12) | (raw_data[4] << 4) | (raw_data[5] >> 4);
+  raw_humidity = (int) (raw_data[6] << 8) | (raw_data[7]);
+  result[0] = aeld_bme280_comp_temp(bme280p, raw_temperature);
+  result[1] = aeld_bme280_comp_press(bme280p, raw_pressure);
+  result[2] = aeld_bme280_comp_hum(bme280p, raw_humidity);
   return 0;
 }
 
@@ -207,6 +232,10 @@ static int aeld_bme280_release(struct inode *inode, struct file *filp)
 
 static ssize_t aeld_bme280_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
+  double result[3] = {0};
+  struct aeld_bme280_dev *bme280p = filp->private_data;
+  aeld_bme280_do_measurement(bme280p, &result[0]);
+  copy_to_user(buf, result, sizeof(result));
   return 0;
 }
 
@@ -229,6 +258,7 @@ static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_
   int err = 0;
   struct aeld_bme280_dev *aeld_bme280 = NULL;
   struct device *device = NULL;
+  u8 is_resetting;
   
   aeld_bme280 = devm_kzalloc(&client->dev, sizeof(struct aeld_bme280_dev), GFP_KERNEL);
   
@@ -238,8 +268,8 @@ static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_
     pr_err("Failed to register device\n");
     return major;
   }
-  aeld_bme280_dev->client = client;
-  aeld_bme280_dev->devt = MKDEV(major, 0);
+  aeld_bme280->client = client;
+  aeld_bme280->devt = MKDEV(major, 0);
   device = device_create(aeld_bme280_class, NULL, aeld_bme280->devt, NULL, BME280_DEVICE_NAME);
   
   if (IS_ERR(device))
@@ -247,6 +277,20 @@ static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_
     pr_err("Failed to create device\n");
     goto fail;
   }
+  
+  mdelay(10);
+  
+  do
+  {
+    mdelay(1);
+    aeld_bme280_read_bytes(aeld_bme280, STATUS_REG_ADDR, &is_resetting, 1);
+  }
+  while (is_resetting | IS_RESETING_BIT);
+  
+  aeld_bme280_com_param_init(aeld_bme280);
+  aeld_bme280_write_cmd(aeld_bme280, CTRL_HUM_REG_ADDR, CMD_H_OVERSAMPLING);
+  aeld_bme280_write_cmd(aeld_bme280, CTRL_MEAS_REG_ADDR, CTRL_MEAS_REG_VAL);
+  
   return 0;
 fail:
   kfree(aeld_bme280);
