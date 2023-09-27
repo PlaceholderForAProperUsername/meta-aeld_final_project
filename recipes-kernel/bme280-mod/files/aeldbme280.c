@@ -11,33 +11,31 @@
 
 #define pr_fmt(fmt) "aeld_BME280: " fmt
 
-#define I2C_BUS             (1)
 #define BME280_DEVICE_NAME  ("aeldbme280")
-#define BME280_SLAVE_ADDR   (0x76)
 
 static struct aeld_bme280_comp_param {
-    uint16_t dig_T1;
-    int16_t dig_T2;
-    int16_t dig_T3;
+    u16 dig_T1;
+    s16 dig_T2;
+    s16 dig_T3;
     
-    int32_t comp_temp;
+    s32 comp_temp;
 
-    uint16_t dig_P1;
-    int16_t dig_P2;
-    int16_t dig_P3;
-    int16_t dig_P4;
-    int16_t dig_P5;
-    int16_t dig_P6;
-    int16_t dig_P7;
-    int16_t dig_P8;
-    int16_t dig_P9;
+    u16 dig_P1;
+    s16 dig_P2;
+    s16 dig_P3;
+    s16 dig_P4;
+    s16 dig_P5;
+    s16 dig_P6;
+    s16 dig_P7;
+    s16 dig_P8;
+    s16 dig_P9;
 
-    uint8_t dig_H1;
-    int16_t dig_H2;
-    uint8_t dig_H3;
-    int16_t dig_H4;
-    int16_t dig_H5;
-    int8_t dig_H6;
+    s16 dig_H1;
+    s16 dig_H2;
+    s16 dig_H3;
+    s16 dig_H4;
+    s16 dig_H5;
+    s16 dig_H6;
 };
 
 struct aeld_bme280_dev {
@@ -47,6 +45,50 @@ struct aeld_bme280_dev {
 };
 
 static struct class *aeld_bme280_class = NULL;
+
+static int aeld_bme280_write_cmd(aeld_bme280_dev *bme280p, u8 reg_addr, u8 cmd)
+{
+  struct i2c_msg msg[2];
+  int status = 0;
+  msg[0].addr = bme280p->client->adapter;
+  msg[0].flags = 0;
+  msg[0].len = 1;
+  msg[0].buf = &reg_addr;
+  
+  msg[1].addr = bme280p->client->adapter;
+  msg[1].flags = 0;
+  msg[1].len = 1;
+  msg[1].buf = &cmd;
+  
+  status = i2c_transfer(bme280p->client->adapter, msg, 2);
+  if (status < 0)
+  {
+    pr_err("write cmd failed\n");
+  }
+  return status;
+}
+
+static int aeld_bme280_read_bytes(aeld_bme280_dev *bme280p, u8 reg_addr, u8 *buf, u8 len)
+{
+  struct i2c_msg msg[2];
+  int status = 0;
+  msg[0].addr = bme280p->client->adapter;
+  msg[0].flags = 0;
+  msg[0].len = 1;
+  msg[0].buf = &reg_addr;
+  
+  msg[1].addr = bme280p->client->adapter;
+  msg[1].flags = I2C_M_RD;
+  msg[1].len = len;
+  msg[1].buf = buf;
+  
+  status = i2c_transfer(bme280p->client->adapter, msg, 2);
+  if (status < 0)
+  {
+    pr_err("write cmd failed\n");
+  }
+  return status;
+}
 
 static int aeld_bme280_open(struct inode *inode, struct file *filp)
 {
