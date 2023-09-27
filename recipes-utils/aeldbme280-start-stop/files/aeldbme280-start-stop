@@ -1,0 +1,17 @@
+#!/bin/sh
+
+case "$1" in
+	start)
+		echo "loading aeld_bme280"
+		modprobe aeldbme280
+		;;
+	stop)
+		echo "unloading aeld_bme280"
+		rmmod aeldbme280
+		;;
+	*)
+		echo "Usage: $0 {start|stop}"
+	exit 1
+esac
+
+exit 0
