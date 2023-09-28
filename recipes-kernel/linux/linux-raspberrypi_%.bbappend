@@ -4,3 +4,5 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
+KERNEL_DEVICETREE += "overlays/bme280.dtbo"
+
