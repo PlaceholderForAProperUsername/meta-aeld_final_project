@@ -1,4 +1,4 @@
-SRC_URI += "file://bme280.dts;subdir=git/arch/${ARCH}/boot/dts/overlays"
+SRC_URI += "file://bme280-overlay.dts;subdir=git/arch/${ARCH}/boot/dts/overlays"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
