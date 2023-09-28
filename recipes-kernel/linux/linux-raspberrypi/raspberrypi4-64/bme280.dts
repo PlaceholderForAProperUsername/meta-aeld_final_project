@@ -9,7 +9,7 @@
 		__overlay__ {
 			status = "okay";
 			bme280@76 {
-				compatible = "custom,aeldbme280";
+				compatible = "custom,bme280";
 				reg = <0x76>;
 			};
 		};
