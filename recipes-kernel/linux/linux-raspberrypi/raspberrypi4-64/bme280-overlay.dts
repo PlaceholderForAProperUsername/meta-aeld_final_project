@@ -8,8 +8,8 @@
 		target = <&i2c1>;
 		__overlay__ {
 			status = "okay";
-			bme280@76 {
-				compatible = "custom,bme280";
+			aeldbme280@76 {
+				compatible = "custom,aeldbme280";
 				reg = <0x76>;
 			};
 		};

@@ -231,6 +231,7 @@ static int aeld_bme280_release(struct inode *inode, struct file *filp)
 
 static ssize_t aeld_bme280_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
+  pr_info("Device read\n")
   double result[3] = {0};
   struct aeld_bme280_dev *bme280p = filp->private_data;
   aeld_bme280_do_measurement(bme280p, &result[0]);
