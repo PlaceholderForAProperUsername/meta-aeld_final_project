@@ -12,6 +12,7 @@
 #define pr_fmt(fmt) "aeld_BME280: " fmt
 
 #define BME280_DEVICE_NAME  ("aeldbme280")
+#define BME280_CLASS_NAME   ("aeldbme280_class")
 
 
 // ctrl_meas register
@@ -140,8 +141,6 @@ static int aeld_bme280_com_param_init(struct aeld_bme280_dev *bme280p)
   return 0;
 }
 
-// TODO
-
 static double aeld_bme280_comp_temp(struct aeld_bme280_dev *bme280p, int raw_temperature)
 {
   double tmp1, tmp2, temperature;
@@ -259,6 +258,8 @@ static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_
   struct device *device = NULL;
   u8 is_resetting;
   
+  pr_info("Device probing\n");
+  
   aeld_bme280 = devm_kzalloc(&client->dev, sizeof(struct aeld_bme280_dev), GFP_KERNEL);
   
   major = register_chrdev(0, BME280_DEVICE_NAME, &aeld_bme280_fops);
@@ -322,7 +323,10 @@ static struct i2c_driver aeld_bme280_i2c_driver = {
 static int __init aeld_bme280_driver_init(void)
 {
   int status;
-  aeld_bme280_class = class_create(THIS_MODULE, BME280_DEVICE_NAME);
+  aeld_bme280_class = class_create(THIS_MODULE, BME280_CLASS_NAME);
+  
+  pr_info("Device init\n");
+  
   if (IS_ERR(aeld_bme280_class))
   {
     pr_err("Cannot create class\n");
@@ -331,6 +335,7 @@ static int __init aeld_bme280_driver_init(void)
   status = i2c_register_driver(THIS_MODULE, &aeld_bme280_i2c_driver);
   if (status < 0)
   {
+    pr_err("Class creation failed\n");
     class_destroy(aeld_bme280_class);
   }
   return status;
