@@ -11,6 +11,8 @@
 
 #define pr_fmt(fmt) "aeld_BME280: " fmt
 
+#define I2C_BUS_AVAILABLE   (1)
+#define BME280_DEVICE_ADDR  (0x76)
 #define BME280_DEVICE_NAME  ("aeldbme280")
 #define BME280_CLASS_NAME   ("aeldbme280_class")
 
@@ -35,28 +37,28 @@
 #define MEAS_DATA_START_ADDR    0xF7
 
 struct aeld_bme280_comp_param {
-    u16 dig_T1;
-    s16 dig_T2;
-    s16 dig_T3;
+    int32_t comp_temp;
     
-    s32 comp_temp;
+    uint16_t dig_T1;
+    int16_t dig_T2;
+    int16_t dig_T3;
 
-    u16 dig_P1;
-    s16 dig_P2;
-    s16 dig_P3;
-    s16 dig_P4;
-    s16 dig_P5;
-    s16 dig_P6;
-    s16 dig_P7;
-    s16 dig_P8;
-    s16 dig_P9;
+    uint16_t dig_P1;
+    int16_t dig_P2;
+    int16_t dig_P3;
+    int16_t dig_P4;
+    int16_t dig_P5;
+    int16_t dig_P6;
+    int16_t dig_P7;
+    int16_t dig_P8;
+    int16_t dig_P9;
 
-    u8 dig_H1;
-    s16 dig_H2;
-    u8 dig_H3;
-    s16 dig_H4;
-    s16 dig_H5;
-    s8 dig_H6;
+    uint8_t dig_H1;
+    int16_t dig_H2;
+    uint8_t dig_H3;
+    int16_t dig_H4;
+    int16_t dig_H5;
+    int8_t dig_H6;
 };
 
 struct aeld_bme280_dev {
@@ -67,7 +69,7 @@ struct aeld_bme280_dev {
 
 static struct class *aeld_bme280_class = NULL;
 
-static int aeld_bme280_write_cmd(struct aeld_bme280_dev *bme280p, u8 reg_addr, u8 cmd)
+static int aeld_bme280_write_cmd(struct aeld_bme280_dev *bme280p, uint8_t reg_addr, uint8_t cmd)
 {
   struct i2c_msg msg[2];
   int status = 0;
@@ -89,7 +91,7 @@ static int aeld_bme280_write_cmd(struct aeld_bme280_dev *bme280p, u8 reg_addr, u
   return status;
 }
 
-static int aeld_bme280_read_bytes(struct aeld_bme280_dev *bme280p, u8 reg_addr, u8 *buf, u8 len)
+static int aeld_bme280_read_bytes(struct aeld_bme280_dev *bme280p, uint8_t reg_addr, uint8_t *buf, uint8_t len)
 {
   struct i2c_msg msg[2];
   int status = 0;
@@ -113,30 +115,30 @@ static int aeld_bme280_read_bytes(struct aeld_bme280_dev *bme280p, u8 reg_addr, 
 
 static int aeld_bme280_com_param_init(struct aeld_bme280_dev *bme280p)
 {
-  u8 comp_param_block_1[26];
-  u8 comp_param_block_2[7];
+  uint8_t comp_param_block_1[26];
+  uint8_t comp_param_block_2[7];
   
   aeld_bme280_read_bytes(bme280p, 0x88, &comp_param_block_1[0], 26);
   aeld_bme280_read_bytes(bme280p, 0xE1, &comp_param_block_2[0], 7);
   
-  bme280p->comp_param.dig_T1 = (u16) (comp_param_block_1[1] << 8) | comp_param_block_1[0];
-  bme280p->comp_param.dig_T2 = (s16) ((comp_param_block_1[3] << 8) | comp_param_block_1[2]);
-  bme280p->comp_param.dig_T3 = (s16) ((comp_param_block_1[5] << 8) | comp_param_block_1[4]);
-  bme280p->comp_param.dig_P1 = (u16) (comp_param_block_1[7] << 8) | comp_param_block_1[6];
-  bme280p->comp_param.dig_P2 = (s16) ((comp_param_block_1[9] << 8) | comp_param_block_1[8]);
-  bme280p->comp_param.dig_P3 = (s16) ((comp_param_block_1[11] << 8) | comp_param_block_1[10]);
-  bme280p->comp_param.dig_P4 = (s16) ((comp_param_block_1[13] << 8) | comp_param_block_1[12]);
-  bme280p->comp_param.dig_P5 = (s16) ((comp_param_block_1[15] << 8) | comp_param_block_1[14]);
-  bme280p->comp_param.dig_P6 = (s16) ((comp_param_block_1[17] << 8) | comp_param_block_1[16]);
-  bme280p->comp_param.dig_P7 = (s16) ((comp_param_block_1[19] << 8) | comp_param_block_1[18]);
-  bme280p->comp_param.dig_P8 = (s16) ((comp_param_block_1[21] << 8) | comp_param_block_1[20]);
-  bme280p->comp_param.dig_P9 = (s16) ((comp_param_block_1[23] << 8) | comp_param_block_1[22]);
+  bme280p->comp_param.dig_T1 = (uint16_t) (comp_param_block_1[1] << 8) | comp_param_block_1[0];
+  bme280p->comp_param.dig_T2 = (int16_t) ((comp_param_block_1[3] << 8) | comp_param_block_1[2]);
+  bme280p->comp_param.dig_T3 = (int16_t) ((comp_param_block_1[5] << 8) | comp_param_block_1[4]);
+  bme280p->comp_param.dig_P1 = (uint16_t) (comp_param_block_1[7] << 8) | comp_param_block_1[6];
+  bme280p->comp_param.dig_P2 = (int16_t) ((comp_param_block_1[9] << 8) | comp_param_block_1[8]);
+  bme280p->comp_param.dig_P3 = (int16_t) ((comp_param_block_1[11] << 8) | comp_param_block_1[10]);
+  bme280p->comp_param.dig_P4 = (int16_t) ((comp_param_block_1[13] << 8) | comp_param_block_1[12]);
+  bme280p->comp_param.dig_P5 = (int16_t) ((comp_param_block_1[15] << 8) | comp_param_block_1[14]);
+  bme280p->comp_param.dig_P6 = (int16_t) ((comp_param_block_1[17] << 8) | comp_param_block_1[16]);
+  bme280p->comp_param.dig_P7 = (int16_t) ((comp_param_block_1[19] << 8) | comp_param_block_1[18]);
+  bme280p->comp_param.dig_P8 = (int16_t) ((comp_param_block_1[21] << 8) | comp_param_block_1[20]);
+  bme280p->comp_param.dig_P9 = (int16_t) ((comp_param_block_1[23] << 8) | comp_param_block_1[22]);
   bme280p->comp_param.dig_H1 = comp_param_block_1[25];
-  bme280p->comp_param.dig_H2 = (s16) ((comp_param_block_2[1] << 8) | comp_param_block_2[0]);
+  bme280p->comp_param.dig_H2 = (int16_t) ((comp_param_block_2[1] << 8) | comp_param_block_2[0]);
   bme280p->comp_param.dig_H3 = comp_param_block_2[2];
-  bme280p->comp_param.dig_H4 = (s16) ((comp_param_block_2[3] << 4) | (comp_param_block_2[4] & 0x0F));
-  bme280p->comp_param.dig_H5 = (s16) ((comp_param_block_2[5] << 4) | (comp_param_block_2[4] >> 4));
-  bme280p->comp_param.dig_H6 = (s8) comp_param_block_2[6];
+  bme280p->comp_param.dig_H4 = (int16_t) ((comp_param_block_2[3] << 4) | (comp_param_block_2[4] & 0x0F));
+  bme280p->comp_param.dig_H5 = (int16_t) ((comp_param_block_2[5] << 4) | (comp_param_block_2[4] >> 4));
+  bme280p->comp_param.dig_H6 = (int8_t) comp_param_block_2[6];
   
   return 0;
 }
@@ -147,7 +149,7 @@ static double aeld_bme280_comp_temp(struct aeld_bme280_dev *bme280p, int raw_tem
   tmp1 = (((double) raw_temperature)/16384.0 - ((double)bme280p->comp_param.dig_T1)/1024.0) * ((double) bme280p->comp_param.dig_T2);
   tmp2 = ((((double) raw_temperature)/131072.0 - ((double)bme280p->comp_param.dig_T1) / 8192.0) * 
     (((double)raw_temperature)/131072.0 - ((double)bme280p->comp_param.dig_T1)/8192.0)) * ((double)bme280p->comp_param.dig_T3);
-  bme280p->comp_param.comp_temp = (s32) (tmp1 + tmp2);
+  bme280p->comp_param.comp_temp = (int32_t) (tmp1 + tmp2);
   temperature = (tmp1 + tmp2) / 5120.0;
   return temperature;
 }
@@ -194,8 +196,8 @@ static double aeld_bme280_comp_hum(struct aeld_bme280_dev *bme280p, int raw_humi
 
 static int aeld_bme280_do_measurement(struct aeld_bme280_dev *bme280p, double result[])
 {
-  u8 is_measuring;
-  u8 raw_data[8] = {0};
+  uint8_t is_measuring;
+  uint8_t raw_data[8] = {0};
   int raw_temperature;
   int raw_pressure;
   int raw_humidity;
@@ -251,7 +253,7 @@ static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_
   int major;
   struct aeld_bme280_dev *aeld_bme280 = NULL;
   struct device *device = NULL;
-  u8 is_resetting;
+  uint8_t is_resetting;
   
   pr_info("Device probing\n");
   
@@ -315,30 +317,26 @@ static struct i2c_driver aeld_bme280_i2c_driver = {
 };
 
 static struct i2c_board_info aeld_bme280_i2c_board_info = {
-  I2C_BOARD_INFO(BME280_DEVICE_NAME, 0x76)
+  I2C_BOARD_INFO(BME280_DEVICE_NAME, BME280_DEVICE_ADDR)
 };
 
 
 static int __init aeld_bme280_driver_init(void)
 {
-  int status;
-  
-  aeld_bme280_class = class_create(THIS_MODULE, BME280_CLASS_NAME);
+  struct i2c_adapter *adapter;
+  struct i2c_client *client;
   
   pr_info("Device init\n");
   
-  if (IS_ERR(aeld_bme280_class))
-  {
-    pr_err("Cannot create class\n");
-    return PTR_ERR(aeld_bme280_class);
-  }
-  status = i2c_register_driver(THIS_MODULE, &aeld_bme280_i2c_driver);
-  if (status < 0)
-  {
-    pr_err("Class creation failed\n");
-    class_destroy(aeld_bme280_class);
-  }
-  return status;
+  aeld_bme280_class = class_create(THIS_MODULE, BME280_CLASS_NAME);
+  
+  adapter = i2c_get_adapter(I2C_BUS_AVAILABLE);
+  
+  client = i2c_new_device(adapter, &aeld_bme280_i2c_board_info); 
+  
+  i2c_add_driver(&aeld_bme280_i2c_driver);
+
+  return 0;
 }
 
 static void __exit aeld_bme280_driver_exit(void)
