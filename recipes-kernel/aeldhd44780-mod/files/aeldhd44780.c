@@ -17,7 +17,7 @@
 
 #define CMD_ENTRY_MODE      (0x06)
 #define CMD_DISP_ON_CUR_OFF (0x0C)
-#define CMD_4_BIT_1_LINE    (0x38)
+#define CMD_4_BIT_2_LINE    (0x28)
 #define CMD_CLEAR_DISP      (0x01)
 #define CMD_RETURN_HOME     (0x02)
 
@@ -271,7 +271,7 @@ static int __init aeld_HD44780_init(void)
   gpio_set_value(GPIO_E, 1);
   gpio_set_value(GPIO_E, 0);
   
-  write_cmd(CMD_4_BIT_1_LINE);
+  write_cmd(CMD_4_BIT_2_LINE);
   write_cmd(CMD_ENTRY_MODE);
   write_cmd(CMD_DISP_ON_CUR_OFF);
   write_cmd(CMD_CLEAR_DISP);
