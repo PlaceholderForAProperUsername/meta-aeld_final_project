@@ -233,9 +233,10 @@ static int aeld_bme280_release(struct inode *inode, struct file *filp)
 
 static ssize_t aeld_bme280_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
-  pr_info("Device read\n");
   double result[3] = {0};
   struct aeld_bme280_dev *bme280p = filp->private_data;
+  
+  pr_info("Device read\n");
   aeld_bme280_do_measurement(bme280p, &result[0]);
   
   return count - copy_to_user(buf, result, sizeof(result));
@@ -332,7 +333,7 @@ static int __init aeld_bme280_driver_init(void)
   
   adapter = i2c_get_adapter(I2C_BUS_AVAILABLE);
   
-  client = i2c_new_device(adapter, &aeld_bme280_i2c_board_info); 
+  client = i2c_new_client_device(adapter, &aeld_bme280_i2c_board_info); 
   
   i2c_add_driver(&aeld_bme280_i2c_driver);
 
