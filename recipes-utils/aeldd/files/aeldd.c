@@ -63,9 +63,9 @@ int main()
   FILE *lcd_fd;
   FILE *bme280_fd;
   double measurement_data[3];
-  char *temperature[20];
-  char *humidity[20];
-  char *pressure[20];
+  char temperature[20];
+  char humidity[20];
+  char pressure[20];
   
   start_daemon();
   syslog(LOG_NOTICE, "aeldd: Daemon started.");
