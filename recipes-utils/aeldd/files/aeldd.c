@@ -82,9 +82,9 @@ int main()
   while (1)
   {
     fread(measurement_data, sizeof(measurement_data), 1, bme280_fd);
-    strcpy(temperature, "Temp.: %.2lf °C ", measurement_data[0]);
-    strcpy(pressure, "Press.: %.2lf Pa ", measurement_data[1]);
-    strcpy(humidity, "Hum.: %.2lf % ", measurement_data[2]);
+    sprintf(temperature, "Temp.: %.2lf °C ", measurement_data[0]);
+    sprintf(pressure, "Press.: %.2lf Pa ", measurement_data[1]);
+    sprintf(humidity, "Hum.: %.2lf % ", measurement_data[2]);
     fseek(lcd_fd, row_start[0], SEEK_SET);
     fwrite(temperature, strlen(temperature), 1, lcd_fd);
     fseek(lcd_fd, row_start[1], SEEK_SET);
