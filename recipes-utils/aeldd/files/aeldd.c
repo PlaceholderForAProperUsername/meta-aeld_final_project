@@ -76,15 +76,15 @@ int main()
   lcd_fd = fopen(LCD_DEV, "w");
   syslog(LOG_NOTICE, "aeldd: LCD Device opened.");
   
-  // bme280_fd = fopen(BME280_DEV, "R");
+  bme280_fd = fopen(BME280_DEV, "R");
   syslog(LOG_NOTICE, "aeldd: BME280 Device opened.");
   
   while (1)
   {
-    // fread(measurement_data, sizeof(measurement_data), 1, bme280_fd);
-    // sprintf(temperature, "Temp.: %.2lf °C ", measurement_data[0]);
-    // sprintf(pressure, "Press.: %.2lf Pa ", measurement_data[1]);
-    // sprintf(humidity, "Hum.: %.2lf % ", measurement_data[2]);
+    fread(measurement_data, sizeof(measurement_data), 1, bme280_fd);
+    sprintf(temperature, "Temp.: %.2lf °C ", measurement_data[0]);
+    sprintf(pressure, "Press.: %.2lf Pa ", measurement_data[1]);
+    sprintf(humidity, "Hum.: %.2lf % ", measurement_data[2]);
     fseek(lcd_fd, row_start[0], SEEK_SET);
     fwrite(temperature, strlen(temperature), 1, lcd_fd);
     fseek(lcd_fd, row_start[1], SEEK_SET);
