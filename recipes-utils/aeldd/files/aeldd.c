@@ -7,7 +7,7 @@
 #include <string.h>
 
 static const char *LCD_DEV = "/dev/aeldhd44780";
-static const char *BME280_DEV = "/dev/aeldbme280"
+static const char *BME280_DEV = "/dev/aeldbme280";
 
 static const uint8_t row_start[] = {0x00, 0x40, 0x14, 0x54};
 
@@ -76,7 +76,7 @@ int main()
   syslog(LOG_NOTICE, "aeldd: LCD Device opened.");
   
   bme280_fd = fopen(BME280_DEV, "R");
-  syslog(LOG_NOTICE, "aeldd: BME280 Device opened.")
+  syslog(LOG_NOTICE, "aeldd: BME280 Device opened.");
   
   while (1)
   {
