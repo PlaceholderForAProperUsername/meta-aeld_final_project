@@ -246,12 +246,6 @@ static struct file_operations aeld_bme280_fops = {
   .read           = aeld_bme280_read,
 };
 
-static const struct of_device_id aeld_bme280_dt_ids[] = {
-  { .compatible = "custom,aeldbme280"},
-  {},
-};
-MODULE_DEVICE_TABLE(of, aeld_bme280_dt_ids);
-
 static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
   int major;
@@ -314,16 +308,21 @@ static struct i2c_driver aeld_bme280_i2c_driver = {
   .driver = {
     .owner = THIS_MODULE,
     .name = BME280_DEVICE_NAME,
-    .of_match_table = of_match_ptr(aeld_bme280_dt_ids),
   },
   .probe = aeld_bme280_probe,
   .remove = aeld_bme280_remove,
   .id_table = aeld_bme280_id,
 };
 
+static struct i2c_board_info aeld_bme280_i2c_board_info = {
+  I2C_BOARD_INFO(BME280_DEVICE_NAME, 0x76)
+};
+
+
 static int __init aeld_bme280_driver_init(void)
 {
   int status;
+  
   aeld_bme280_class = class_create(THIS_MODULE, BME280_CLASS_NAME);
   
   pr_info("Device init\n");
