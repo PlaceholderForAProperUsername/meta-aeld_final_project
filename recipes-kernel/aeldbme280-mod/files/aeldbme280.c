@@ -8,6 +8,7 @@
 #include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/types.h>
+#include <linux/uaccess.h>
 
 #define pr_fmt(fmt) "aeld_BME280: " fmt
 
@@ -63,27 +64,22 @@ struct aeld_bme280_comp_param {
 
 struct aeld_bme280_dev {
   struct i2c_client *client;
+  struct cdev *cdev;
   dev_t devt;
   struct aeld_bme280_comp_param comp_param;
 };
 
+static struct i2c_adapter *aeld_bme280_i2c_adapter = NULL;
 static struct class *aeld_bme280_class = NULL;
+static struct aeld_bme280_dev bme280_dev;
 
 static int aeld_bme280_write_cmd(struct aeld_bme280_dev *bme280p, uint8_t reg_addr, uint8_t cmd)
 {
-  struct i2c_msg msg[2];
   int status = 0;
-  msg[0].addr = bme280p->client->addr;
-  msg[0].flags = 0;
-  msg[0].len = 1;
-  msg[0].buf = &reg_addr;
-  
-  msg[1].addr = bme280p->client->addr;
-  msg[1].flags = 0;
-  msg[1].len = 1;
-  msg[1].buf = &cmd;
-  
-  status = i2c_transfer(bme280p->client->adapter, msg, 2);
+  uint8_t msg[2] = {0};
+  msg[0] = reg_addr;
+  msg[1] = cmd;
+  status = i2c_master_send(bme280p->client, msg, 2);
   if (status < 0)
   {
     pr_err("write cmd failed\n");
@@ -93,22 +89,13 @@ static int aeld_bme280_write_cmd(struct aeld_bme280_dev *bme280p, uint8_t reg_ad
 
 static int aeld_bme280_read_bytes(struct aeld_bme280_dev *bme280p, uint8_t reg_addr, uint8_t *buf, uint8_t len)
 {
-  struct i2c_msg msg[2];
   int status = 0;
-  msg[0].addr = bme280p->client->addr;
-  msg[0].flags = 0;
-  msg[0].len = 1;
-  msg[0].buf = &reg_addr;
+  status = i2c_master_send(bme280p->client, &reg_addr, 1);
+  status |= i2c_master_recv(bme280p->client, buf, len);
   
-  msg[1].addr = bme280p->client->addr;
-  msg[1].flags = I2C_M_RD;
-  msg[1].len = len;
-  msg[1].buf = buf;
-  
-  status = i2c_transfer(bme280p->client->adapter, msg, 2);
   if (status < 0)
   {
-    pr_err("write cmd failed\n");
+    pr_err("read bytes failed\n");
   }
   return status;
 }
@@ -234,10 +221,9 @@ static int aeld_bme280_release(struct inode *inode, struct file *filp)
 static ssize_t aeld_bme280_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
   double result[3] = {0};
-  struct aeld_bme280_dev *bme280p = filp->private_data;
   
   pr_info("Device read\n");
-  aeld_bme280_do_measurement(bme280p, &result[0]);
+  aeld_bme280_do_measurement(&bme280_dev, &result[0]);
   
   return count - copy_to_user(buf, result, sizeof(result));
 }
@@ -251,30 +237,7 @@ static struct file_operations aeld_bme280_fops = {
 
 static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-  int major;
-  struct aeld_bme280_dev *aeld_bme280 = NULL;
-  struct device *device = NULL;
   uint8_t is_resetting;
-  
-  pr_info("Device probing\n");
-  
-  aeld_bme280 = devm_kzalloc(&client->dev, sizeof(struct aeld_bme280_dev), GFP_KERNEL);
-  
-  major = register_chrdev(0, BME280_DEVICE_NAME, &aeld_bme280_fops);
-  if (major < 0)
-  {
-    pr_err("Failed to register device\n");
-    return major;
-  }
-  aeld_bme280->client = client;
-  aeld_bme280->devt = MKDEV(major, 0);
-  device = device_create(aeld_bme280_class, NULL, aeld_bme280->devt, NULL, BME280_DEVICE_NAME);
-  
-  if (IS_ERR(device))
-  {
-    pr_err("Failed to create device\n");
-    goto fail;
-  }
   
   mdelay(10);
   
@@ -285,20 +248,16 @@ static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_
   }
   while (is_resetting | IS_RESETING_BIT);
   
-  aeld_bme280_com_param_init(aeld_bme280);
+  aeld_bme280_com_param_init(&bme280_dev);
   aeld_bme280_write_cmd(aeld_bme280, CTRL_HUM_REG_ADDR, CMD_H_OVERSAMPLING);
   aeld_bme280_write_cmd(aeld_bme280, CTRL_MEAS_REG_ADDR, CTRL_MEAS_REG_VAL);
   
   return 0;
-fail:
-  kfree(aeld_bme280);
-  return PTR_ERR(device);
 }
 
 static void aeld_bme280_remove(struct i2c_client *client)
 {
-  struct aeld_bme280_dev *aeld_bme280 = i2c_get_clientdata(client);
-  device_destroy(aeld_bme280_class, aeld_bme280->devt);
+  pr_info("device removed\n");
 }
 
 static const struct i2c_device_id aeld_bme280_id[] = {
@@ -324,26 +283,67 @@ static struct i2c_board_info aeld_bme280_i2c_board_info = {
 
 static int __init aeld_bme280_driver_init(void)
 {
-  struct i2c_adapter *adapter;
-  struct i2c_client *client;
+  int status = 0;
   
   pr_info("Device init\n");
   
+  status = alloc_chrdev_region(&bme280_dev->devt, 0, 1, BME280_DEVICE_NAME);
+  if (status < 0)
+  {
+    pr_err("Cannot allocate major number\n");
+    return status;
+  }
+  pr_info("Major = %d, Minor = %d \n", MAJOR(bme280_dev->devt), MINOR(bme280_dev->devt));
+  
+  cdev_init(bme280_dev->cdev, &aeld_bme280_fops);
+  
+  status = cdev_add(bme280_dev->cdev, bme280_dev->devt, 1);
+  if (status < 0)
+  {
+    pr_err("Cannot add the device to the system\n");
+    return status;
+  }
+  pr_info("device added to system\n");
+  
   aeld_bme280_class = class_create(THIS_MODULE, BME280_CLASS_NAME);
+  if (aeld_bme280_class == NULL)
+  {
+    pr_err("Class could not be created\n");
+    return -1;
+  }
+  if ((device_create(aeld_bme280_class, NULL, bme280_dev->devt, NULL, BME280_DEVICE_NAME)) == NULL)
+  {
+    pr_err("Cannot create the device \n");
+    return -1;
+  }
+  aeld_bme280_i2c_adapter = i2c_get_adapter(I2C_BUS_AVAILABLE);
   
-  adapter = i2c_get_adapter(I2C_BUS_AVAILABLE);
+  if (NULL != aeld_bme280_i2c_adapter)
+  {
+    pr_info("i2c adapter added\n");
+    bme280_dev->client = i2c_new_client_device(aeld_bme280_i2c_adapter, &aeld_bme280_i2c_board_info);
+    if (NULL != bme280_dev->client)
+    {
+      pr_info("i2c client added\n");
+      i2c_add_driver(&aeld_bme280_i2c_driver);
+    }
+    i2c_put_adapter(aeld_bme280_i2c_adapter);
+  }
   
-  client = i2c_new_client_device(adapter, &aeld_bme280_i2c_board_info); 
-  
-  i2c_add_driver(&aeld_bme280_i2c_driver);
+  pr_info("driver init complete\n");
 
   return 0;
 }
 
 static void __exit aeld_bme280_driver_exit(void)
 {
+  i2c_unregister_device(bme280_dev->client);
   i2c_del_driver(&aeld_bme280_i2c_driver);
+  device_destroy(aeld_bme280_class, bme280_dev->devt);
   class_destroy(aeld_bme280_class);
+  cdev_del(bme280_dev->cdev);
+  unregister_chrdev_region(bme280_dev->devt, 1);
+  pr_info("Driver Removed!!!\n");
 }
 
 module_init(aeld_bme280_driver_init);
