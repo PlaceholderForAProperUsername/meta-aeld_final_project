@@ -197,7 +197,7 @@ static int aeld_bme280_do_measurement(struct aeld_bme280_dev *bme280p, double re
     mdelay(1);
     aeld_bme280_read_bytes(bme280p, STATUS_REG_ADDR, &is_measuring, 1);
   }
-  while (is_measuring | IS_MEASURING_BIT);
+  while (is_measuring & IS_MEASURING_BIT);
   aeld_bme280_read_bytes(bme280p, MEAS_DATA_START_ADDR, &raw_data[0], 8);
   raw_pressure = (int) (raw_data[0] << 12) | (raw_data[1] << 4) | (raw_data[2] >> 4);
   raw_temperature = (int) (raw_data[3] << 12) | (raw_data[4] << 4) | (raw_data[5] >> 4);
