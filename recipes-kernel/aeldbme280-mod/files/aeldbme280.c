@@ -64,7 +64,7 @@ struct aeld_bme280_comp_param {
 
 struct aeld_bme280_dev {
   struct i2c_client *client;
-  struct cdev *cdev;
+  struct cdev cdev;
   dev_t devt;
   struct aeld_bme280_comp_param comp_param;
 };
@@ -299,7 +299,7 @@ static int __init aeld_bme280_driver_init(void)
   }
   pr_info("Major = %d, Minor = %d \n", MAJOR(bme280_dev.devt), MINOR(bme280_dev.devt));
   
-  cdev_init(bme280_dev.cdev, &aeld_bme280_fops);
+  cdev_init(&bme280_dev.cdev, &aeld_bme280_fops);
   
   status = cdev_add(bme280_dev.cdev, bme280_dev.devt, 1);
   if (status < 0)
