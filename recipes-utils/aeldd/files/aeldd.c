@@ -76,7 +76,7 @@ int main()
   lcd_fd = fopen(LCD_DEV, "w");
   syslog(LOG_NOTICE, "aeldd: LCD Device opened.");
   
-  bme280_fd = fopen(BME280_DEV, "R");
+  bme280_fd = fopen(BME280_DEV, "r");
   syslog(LOG_NOTICE, "aeldd: BME280 Device opened.");
   
   while (1)
