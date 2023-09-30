@@ -301,7 +301,7 @@ static int __init aeld_bme280_driver_init(void)
   
   cdev_init(&bme280_dev.cdev, &aeld_bme280_fops);
   
-  status = cdev_add(bme280_dev.cdev, bme280_dev.devt, 1);
+  status = cdev_add(&bme280_dev.cdev, bme280_dev.devt, 1);
   if (status < 0)
   {
     pr_err("Cannot add the device to the system\n");
@@ -345,7 +345,7 @@ static void __exit aeld_bme280_driver_exit(void)
   i2c_del_driver(&aeld_bme280_i2c_driver);
   device_destroy(aeld_bme280_class, bme280_dev.devt);
   class_destroy(aeld_bme280_class);
-  cdev_del(bme280_dev.cdev);
+  cdev_del(&bme280_dev.cdev);
   unregister_chrdev_region(bme280_dev.devt, 1);
   pr_info("Driver Removed!!!\n");
 }
