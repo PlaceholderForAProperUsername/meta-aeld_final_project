@@ -77,6 +77,7 @@ static int aeld_bme280_write_cmd(struct aeld_bme280_dev *bme280p, uint8_t reg_ad
 {
   int status = 0;
   uint8_t msg[2] = {0};
+  pr_info("write cmd\n");
   msg[0] = reg_addr;
   msg[1] = cmd;
   status = i2c_master_send(bme280p->client, msg, 2);
@@ -90,6 +91,7 @@ static int aeld_bme280_write_cmd(struct aeld_bme280_dev *bme280p, uint8_t reg_ad
 static int aeld_bme280_read_bytes(struct aeld_bme280_dev *bme280p, uint8_t reg_addr, uint8_t *buf, uint8_t len)
 {
   int status = 0;
+  pr_info("reading %d bytes \n", len);
   status = i2c_master_send(bme280p->client, &reg_addr, 1);
   status |= i2c_master_recv(bme280p->client, buf, len);
   
@@ -239,6 +241,8 @@ static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_
 {
   uint8_t is_resetting;
   
+  pr_info("device probed\n");
+  
   mdelay(10);
   
   do
@@ -246,7 +250,7 @@ static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_
     mdelay(1);
     aeld_bme280_read_bytes(&bme280_dev, STATUS_REG_ADDR, &is_resetting, 1);
   }
-  while (is_resetting | IS_RESETING_BIT);
+  while (is_resetting & IS_RESETING_BIT);
   
   aeld_bme280_com_param_init(&bme280_dev);
   aeld_bme280_write_cmd(&bme280_dev, CTRL_HUM_REG_ADDR, CMD_H_OVERSAMPLING);
