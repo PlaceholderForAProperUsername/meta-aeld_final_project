@@ -244,13 +244,13 @@ static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_
   do
   {
     mdelay(1);
-    aeld_bme280_read_bytes(aeld_bme280, STATUS_REG_ADDR, &is_resetting, 1);
+    aeld_bme280_read_bytes(&bme280_dev, STATUS_REG_ADDR, &is_resetting, 1);
   }
   while (is_resetting | IS_RESETING_BIT);
   
   aeld_bme280_com_param_init(&bme280_dev);
-  aeld_bme280_write_cmd(aeld_bme280, CTRL_HUM_REG_ADDR, CMD_H_OVERSAMPLING);
-  aeld_bme280_write_cmd(aeld_bme280, CTRL_MEAS_REG_ADDR, CTRL_MEAS_REG_VAL);
+  aeld_bme280_write_cmd(&bme280_dev, CTRL_HUM_REG_ADDR, CMD_H_OVERSAMPLING);
+  aeld_bme280_write_cmd(&bme280_dev, CTRL_MEAS_REG_ADDR, CTRL_MEAS_REG_VAL);
   
   return 0;
 }
