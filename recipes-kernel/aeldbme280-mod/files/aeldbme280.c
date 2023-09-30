@@ -223,7 +223,7 @@ static ssize_t aeld_bme280_read(struct file *filp, char __user *buf, size_t coun
   pr_info("Device read\n");
   aeld_bme280_do_measurement(&bme280_dev, &result[0]);
   
-  return copy_to_user(buf, result, sizeof(result));
+  return count - copy_to_user(buf, result, sizeof(result));
 }
 
 static struct file_operations aeld_bme280_fops = {
