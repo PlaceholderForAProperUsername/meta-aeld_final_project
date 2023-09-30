@@ -84,9 +84,9 @@ int main()
     syslog(LOG_NOTICE, "aeldd: BME280 Device opened.");
     fread(measurement_data, sizeof(measurement_data), 1, bme280_fd);
     close(bme280_fd);
-    snprintf(temperature, 19, "Temp.: %.2f °C ", measurement_data[0] / 100.0f);
+    snprintf(temperature, 19, "Temp.: %.2f C ", measurement_data[0] / 100.0f);
     snprintf(pressure, 19, "Press.: %.2f kPa ", measurement_data[1] / 1000.0f);
-    snprintf(humidity, 19, "Hum.: %d \% ", measurement_data[2]);
+    snprintf(humidity, 19, "Hum.: %d %c ", measurement_data[2], '%');  
     fseek(lcd_fd, row_start[0], SEEK_SET);
     fwrite(temperature, strlen(temperature), 1, lcd_fd);
     fseek(lcd_fd, row_start[1], SEEK_SET);
