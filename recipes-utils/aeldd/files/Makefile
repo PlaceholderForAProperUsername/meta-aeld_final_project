@@ -1,7 +1,6 @@
 CC ?= $(CROSS_COMPILE)gcc
 TARGET ?= aeldd
 CFLAGS ?= -Wall -Werror -g -O0
-LDFLAGS ?= -lpthread
 
 
 all: $(TARGET)

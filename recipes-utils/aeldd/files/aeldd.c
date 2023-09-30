@@ -63,7 +63,7 @@ int main()
 {
   FILE *lcd_fd;
   FILE *bme280_fd;
-  double measurement_data[3];
+  int32_t measurement_data[3];
   char temperature[20] = "temperature";
   char humidity[20] = "humidity";
   char pressure[20] = "pressure";
@@ -82,16 +82,15 @@ int main()
   while (1)
   {
     fread(measurement_data, sizeof(measurement_data), 1, bme280_fd);
-    sprintf(temperature, "Temp.: %.2lf °C ", measurement_data[0]);
-    sprintf(pressure, "Press.: %.2lf Pa ", measurement_data[1]);
-    sprintf(humidity, "Hum.: %.2lf % ", measurement_data[2]);
+    sprintf(temperature, "Temp.: %.2f °C ", measurement_data[0] / 100.0f);
+    sprintf(pressure, "Press.: %.2f kPa ", measurement_data[1] / 1000.0f);
+    sprintf(humidity, "Hum.: %d % ", measurement_data[2]);
     fseek(lcd_fd, row_start[0], SEEK_SET);
     fwrite(temperature, strlen(temperature), 1, lcd_fd);
     fseek(lcd_fd, row_start[1], SEEK_SET);
     fwrite(pressure, strlen(pressure), 1, lcd_fd);
     fseek(lcd_fd, row_start[2], SEEK_SET);
     fwrite(humidity, strlen(humidity), 1, lcd_fd);
-    syslog(LOG_NOTICE, "aeldd: hello send to display.");
     sleep(1);
   }
   
