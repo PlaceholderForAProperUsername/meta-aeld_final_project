@@ -226,11 +226,17 @@ static ssize_t aeld_bme280_read(struct file *filp, char __user *buf, size_t coun
   return count - copy_to_user(buf, result, sizeof(result));
 }
 
+static loff_t aeld_bme280_llseek(struct file *filp, loff_t offset, int whence)
+{
+  return 0;
+}
+
 static struct file_operations aeld_bme280_fops = {
   .owner          = THIS_MODULE,
   .open           = aeld_bme280_open,
   .release        = aeld_bme280_release,
   .read           = aeld_bme280_read,
+  .llseek         = aeld_bme280_llseek,
 };
 
 static int aeld_bme280_probe(struct i2c_client *client, const struct i2c_device_id *id)
