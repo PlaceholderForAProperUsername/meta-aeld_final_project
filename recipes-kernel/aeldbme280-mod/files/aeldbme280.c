@@ -287,17 +287,17 @@ static int __init aeld_bme280_driver_init(void)
   
   pr_info("Device init\n");
   
-  status = alloc_chrdev_region(&bme280_dev->devt, 0, 1, BME280_DEVICE_NAME);
+  status = alloc_chrdev_region(&bme280_dev.devt, 0, 1, BME280_DEVICE_NAME);
   if (status < 0)
   {
     pr_err("Cannot allocate major number\n");
     return status;
   }
-  pr_info("Major = %d, Minor = %d \n", MAJOR(bme280_dev->devt), MINOR(bme280_dev->devt));
+  pr_info("Major = %d, Minor = %d \n", MAJOR(bme280_dev.devt), MINOR(bme280_dev.devt));
   
-  cdev_init(bme280_dev->cdev, &aeld_bme280_fops);
+  cdev_init(bme280_dev.cdev, &aeld_bme280_fops);
   
-  status = cdev_add(bme280_dev->cdev, bme280_dev->devt, 1);
+  status = cdev_add(bme280_dev.cdev, bme280_dev.devt, 1);
   if (status < 0)
   {
     pr_err("Cannot add the device to the system\n");
@@ -311,7 +311,7 @@ static int __init aeld_bme280_driver_init(void)
     pr_err("Class could not be created\n");
     return -1;
   }
-  if ((device_create(aeld_bme280_class, NULL, bme280_dev->devt, NULL, BME280_DEVICE_NAME)) == NULL)
+  if ((device_create(aeld_bme280_class, NULL, bme280_dev.devt, NULL, BME280_DEVICE_NAME)) == NULL)
   {
     pr_err("Cannot create the device \n");
     return -1;
@@ -321,8 +321,8 @@ static int __init aeld_bme280_driver_init(void)
   if (NULL != aeld_bme280_i2c_adapter)
   {
     pr_info("i2c adapter added\n");
-    bme280_dev->client = i2c_new_client_device(aeld_bme280_i2c_adapter, &aeld_bme280_i2c_board_info);
-    if (NULL != bme280_dev->client)
+    bme280_dev.client = i2c_new_client_device(aeld_bme280_i2c_adapter, &aeld_bme280_i2c_board_info);
+    if (NULL != bme280_dev.client)
     {
       pr_info("i2c client added\n");
       i2c_add_driver(&aeld_bme280_i2c_driver);
@@ -337,12 +337,12 @@ static int __init aeld_bme280_driver_init(void)
 
 static void __exit aeld_bme280_driver_exit(void)
 {
-  i2c_unregister_device(bme280_dev->client);
+  i2c_unregister_device(bme280_dev.client);
   i2c_del_driver(&aeld_bme280_i2c_driver);
-  device_destroy(aeld_bme280_class, bme280_dev->devt);
+  device_destroy(aeld_bme280_class, bme280_dev.devt);
   class_destroy(aeld_bme280_class);
-  cdev_del(bme280_dev->cdev);
-  unregister_chrdev_region(bme280_dev->devt, 1);
+  cdev_del(bme280_dev.cdev);
+  unregister_chrdev_region(bme280_dev.devt, 1);
   pr_info("Driver Removed!!!\n");
 }
 
