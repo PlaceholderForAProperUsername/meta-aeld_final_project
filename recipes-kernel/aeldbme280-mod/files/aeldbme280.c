@@ -135,8 +135,8 @@ static int aeld_bme280_com_param_init(struct aeld_bme280_dev *bme280p)
 static int32_t aeld_bme280_comp_temp(struct aeld_bme280_dev *bme280p, int raw_temperature)
 {
   int tmp1, tmp2, temperature;
-  tmp1 = ((((raw_temperature>>3) – ((int32_t)bme280p->comp_param.dig_T1<<1))) * ((int32_t) bme280p->comp_param.dig_T2)) >> 11;
-  tmp2 = (((((raw_temperature>>4) – ((int32_t)bme280p->comp_param.dig_T1)) * ((raw_temperature>>4) – ((int32_t) bme280p->comp_param.dig_T1)))
+  tmp1 = ((((raw_temperature >> 3) - ((int32_t)bme280p->comp_param.dig_T1<<1))) * ((int32_t) bme280p->comp_param.dig_T2)) >> 11;
+  tmp2 = (((((raw_temperature >> 4) - ((int32_t)bme280p->comp_param.dig_T1)) * ((raw_temperature>>4) - ((int32_t) bme280p->comp_param.dig_T1)))
           >> 12) * ((int32_t)bme280p->comp_param.dig_T3)) >> 14;
   bme280p->comp_param.comp_temp = tmp1 + tmp2;
   temperature = (bme280p->comp_param.comp_temp * 5 + 128) >> 8;
@@ -146,7 +146,7 @@ static int32_t aeld_bme280_comp_temp(struct aeld_bme280_dev *bme280p, int raw_te
 static int32_t aeld_bme280_comp_press(struct aeld_bme280_dev *bme280p, int raw_pressure)
 {
   int64_t tmp1, tmp2, pressure;
-  tmp1 = ((int64_t)bme280p->comp_param.comp_temp) – 128000;
+  tmp1 = ((int64_t)bme280p->comp_param.comp_temp) - 128000;
   tmp2 = tmp1 * tmp1 * (int64_t)bme280p->comp_param.dig_P6;
   tmp2 = tmp2 + ((tmp1*(int64_t)bme280p->comp_param.dig_P5)<<17);
   tmp2 = tmp2 + (((int64_t)bme280p->comp_param.dig_P4)<<35);
@@ -157,7 +157,7 @@ static int32_t aeld_bme280_comp_press(struct aeld_bme280_dev *bme280p, int raw_p
   return 0; // avoid exception caused by division by zero
   }
   pressure = 1048576-raw_pressure;
-  pressure = (((p<<31)-tmp2)*3125)/tmp1;
+  pressure = (((pressure<<31)-tmp2)*3125)/tmp1;
   tmp1 = (((int64_t)bme280p->comp_param.dig_P9) * (p>>13) * (p>>13)) >> 25;
   tmp2 = (((int64_t)bme280p->comp_param.dig_P8) * p) >> 19;
   pressure = ((pressure + tmp1 + tmp2) >> 8) + (((int64_t)bme280p->comp_param.dig_P7)<<4);
@@ -168,13 +168,13 @@ static int32_t aeld_bme280_comp_hum(struct aeld_bme280_dev *bme280p, int raw_hum
 {
   int32_t humidity;
   humidity = (bme280p->comp_param.comp_temp – ((int32_t)76800));
-  humidity = (((((adc_H << 14) – (((int32_t)bme280p->comp_param.dig_H4) << 20) – (((int32_t)bme280p->comp_param.dig_H5) * humidity)) + 
+  humidity = (((((adc_H << 14) – (((int32_t)bme280p->comp_param.dig_H4) << 20) - (((int32_t)bme280p->comp_param.dig_H5) * humidity)) + 
   ((int32_t)16384)) >> 15) * (((((((humidity *
   ((int32_t)bme280p->comp_param.dig_H6)) >> 10) * (((humidity * ((int32_t)bme280p->comp_param.dig_H3)) >> 11) +
   ((int32_t)32768))) >> 10) + ((int32_t)2097152)) * ((int32_t)bme280p->comp_param.dig_H2) + 8192) >> 14));
-  humidity = (humidity – (((((humidity >> 15) * (humidity >> 15)) >> 7) * ((int32_t)bme280p->comp_param.dig_H1)) >> 4));
+  humidity = (humidity - (((((humidity >> 15) * (humidity >> 15)) >> 7) * ((int32_t)bme280p->comp_param.dig_H1)) >> 4));
   humidity = (humidity < 0 ? 0 : humidity);
-  humidity = (humidity > 419430400 ? 419430400 : humidity)
+  humidity = (humidity > 419430400 ? 419430400 : humidity);
   return (humidity >> 12) / 1024;
 }
 
