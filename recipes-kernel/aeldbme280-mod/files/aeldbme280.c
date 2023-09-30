@@ -168,7 +168,7 @@ static int32_t aeld_bme280_comp_hum(struct aeld_bme280_dev *bme280p, int raw_hum
 {
   int32_t humidity;
   humidity = (bme280p->comp_param.comp_temp - ((int32_t)76800));
-  humidity = (((((raw_humidity << 14) – (((int32_t)bme280p->comp_param.dig_H4) << 20) - (((int32_t)bme280p->comp_param.dig_H5) * humidity)) + 
+  humidity = (((((raw_humidity << 14) - (((int32_t)bme280p->comp_param.dig_H4) << 20) - (((int32_t)bme280p->comp_param.dig_H5) * humidity)) + 
   ((int32_t)16384)) >> 15) * (((((((humidity *
   ((int32_t)bme280p->comp_param.dig_H6)) >> 10) * (((humidity * ((int32_t)bme280p->comp_param.dig_H3)) >> 11) +
   ((int32_t)32768))) >> 10) + ((int32_t)2097152)) * ((int32_t)bme280p->comp_param.dig_H2) + 8192) >> 14));
