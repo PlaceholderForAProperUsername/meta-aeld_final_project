@@ -64,9 +64,9 @@ int main()
   FILE *lcd_fd;
   FILE *bme280_fd;
   int32_t measurement_data[3];
-  char temperature[20] = "temperature";
-  char humidity[20] = "humidity";
-  char pressure[20] = "pressure";
+  char temperature[20];
+  char humidity[20];
+  char pressure[20];
   
   start_daemon();
   syslog(LOG_NOTICE, "aeldd: Daemon started.");
@@ -82,16 +82,19 @@ int main()
   while (1)
   {
     fread(measurement_data, sizeof(measurement_data), 1, bme280_fd);
-    sprintf(temperature, "Temp.: %.2f °C ", measurement_data[0] / 100.0f);
-    sprintf(pressure, "Press.: %.2f kPa ", measurement_data[1] / 1000.0f);
-    sprintf(humidity, "Hum.: %d % ", measurement_data[2]);
+    snprintf(temperature, 19, "Temp.: %.2f °C ", measurement_data[0] / 100.0f);
+    snprintf(pressure, 19, "Press.: %.2f kPa ", measurement_data[1] / 1000.0f);
+    snprintf(humidity, 19, "Hum.: %d % ", measurement_data[2]);
     fseek(lcd_fd, row_start[0], SEEK_SET);
     fwrite(temperature, strlen(temperature), 1, lcd_fd);
     fseek(lcd_fd, row_start[1], SEEK_SET);
     fwrite(pressure, strlen(pressure), 1, lcd_fd);
     fseek(lcd_fd, row_start[2], SEEK_SET);
     fwrite(humidity, strlen(humidity), 1, lcd_fd);
-    sleep(1);
+    sleep(5);
+    temperature = "";
+    pressure = "";
+    humidity = "";
   }
   
   closelog();

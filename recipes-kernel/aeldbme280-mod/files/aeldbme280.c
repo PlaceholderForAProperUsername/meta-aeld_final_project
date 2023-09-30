@@ -166,7 +166,7 @@ static int32_t aeld_bme280_comp_press(struct aeld_bme280_dev *bme280p, int raw_p
 
 static int32_t aeld_bme280_comp_hum(struct aeld_bme280_dev *bme280p, int raw_humidity)
 {
-  int32_t humidity;
+  uint32_t humidity;
   humidity = (bme280p->comp_param.comp_temp - ((int32_t)76800));
   humidity = (((((raw_humidity << 14) - (((int32_t)bme280p->comp_param.dig_H4) << 20) - (((int32_t)bme280p->comp_param.dig_H5) * humidity)) + 
   ((int32_t)16384)) >> 15) * (((((((humidity *
@@ -175,7 +175,7 @@ static int32_t aeld_bme280_comp_hum(struct aeld_bme280_dev *bme280p, int raw_hum
   humidity = (humidity - (((((humidity >> 15) * (humidity >> 15)) >> 7) * ((int32_t)bme280p->comp_param.dig_H1)) >> 4));
   humidity = (humidity < 0 ? 0 : humidity);
   humidity = (humidity > 419430400 ? 419430400 : humidity);
-  return (humidity >> 12) / 1024;
+  return (int32_t)(humidity >> 12) / 1024;
 }
 
 static int aeld_bme280_do_measurement(struct aeld_bme280_dev *bme280p, int32_t result[])
@@ -200,6 +200,7 @@ static int aeld_bme280_do_measurement(struct aeld_bme280_dev *bme280p, int32_t r
   result[0] = aeld_bme280_comp_temp(bme280p, raw_temperature);
   result[1] = aeld_bme280_comp_press(bme280p, raw_pressure);
   result[2] = aeld_bme280_comp_hum(bme280p, raw_humidity);
+  pr_info("measurement data: temp: %d, press: %d, hum: %d\n", result[0], result[1], result[2]);
   return 0;
 }
 
